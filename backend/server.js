@@ -57,6 +57,7 @@ const getProfile = async () => {
     name: profile.name || "PixelPrairie",
     techStack: profile.techStack || "Next.js 16, React, Tailwind CSS",
     pricingFormula: profile.pricingFormula || "Custom value-based pricing",
+    coreService: profile.coreService || "AI Voice Automation",
     elevenlabsApiKey: process.env.ELEVENLABS_API_KEY || profile.elevenlabsApiKey || "",
     elevenlabsAgentId: process.env.ELEVENLABS_AGENT_ID || profile.elevenlabsAgentId || "",
     twilioSid: process.env.TWILIO_SID || profile.twilioSid || "",
@@ -611,11 +612,11 @@ app.post('/api/inbox/:id/reply', async (req, res) => {
     { type: "thought", message: `Generating personalized AI reply to overcome the "${category}" objection for ${message.leadName}.`, timestamp: new Date().toISOString() }
   ];
 
-  const replySystemPrompt = `You are Kuldeep Kataria, founder of ${profile.name}, a web and AI agency in Fargo, ND.
+  const replySystemPrompt = `You are an expert B2B sales copywriter for ${profile.name}, an agency in Fargo, ND specializing in ${profile.coreService || 'AI Voice Automation'}.
 You are replying to a local business owner who responded to your cold pitch email. 
 Your goal is to overcome their objection and get them to agree to a 10-minute call or demo.
 Write a warm, confident, human reply. Do not use bullet points or headers — write as natural paragraphs.
-End with: Best,\nKuldeep Kataria\n${profile.name}`;
+Do not include any extra footer text, sign-offs, or notes at the bottom.`;
 
   const replyUserPrompt = `A lead named "${message.leadName}" responded to your pitch email with the following message:
 
@@ -625,8 +626,8 @@ Their main objection type is: ${category.toUpperCase()}
 Use these proven tactics to overcome it:
 ${tactics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
-Write a personalized reply to overcome their "${category}" objection and schedule a meeting. 
-Ask them to let you know when they are free so you can call them immediately. Keep it under 150 words and natural.`;
+Write a personalized reply explaining how our ${profile.coreService || 'AI Voice Automation'} service solves their "${category}" objection and schedule a meeting. 
+Ask them to let you know when they are free so you can call them immediately. Keep it under 150 words and natural. DO NOT include any footer text.`;
 
   let replyText = "";
   const aiReply = await generateTextHelper(replyUserPrompt, replySystemPrompt, profile);
@@ -636,11 +637,11 @@ Ask them to let you know when they are free so you can call them immediately. Ke
     logs.push({ type: "observation", message: `AI Brain generated a personalized ${category} objection reply.`, timestamp: new Date().toISOString() });
   } else {
     if (category === "price") {
-      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nI completely understand that budget is top of mind right now. That's actually why we structure things differently at ${profile.name}.\n\nWe build a **free, live working demo** of your website or voice agent first, so you can test it and see the actual results before you pay us anything. If you don't see how it will bring you more bookings, we walk away and you owe nothing.\n\nPlease let me know when you are free, and we will call you immediately to chat about it!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nI completely understand that budget is top of mind right now. That's actually why we structure things differently at ${profile.name}.\n\nWe build a **free, live working demo** of your website or voice agent first, so you can test it and see the actual results before you pay us anything. If you don't see how it will bring you more bookings, we walk away and you owe nothing.\n\nPlease let me know when you are free, and we will call you immediately to chat about it!`;
     } else if (category === "trust") {
-      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThat's a very fair concern. A lot of AI voice bots sound robotic and turn customers off. That's why we use ElevenLabs' neural engine—it captures natural human tone, breathing, and has less than a 1-second delay, so customers feel like they are talking to a real receptionist.\n\nI would love to set up a quick **test number** mapped to your phone so you can dial in and speak to the AI agent yourself to test the realism.\n\nPlease let me know when you are free, and we will call you immediately to get that set up for you.\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThat's a very fair concern. A lot of AI bots sound robotic and turn customers off. That's why we use state-of-the-art neural engines with less than a 1-second delay, so customers feel like they are talking to a real receptionist.\n\nI would love to set up a quick **test number** mapped to your phone so you can dial in and speak to the AI agent yourself to test the realism.\n\nPlease let me know when you are free, and we will call you immediately to get that set up for you.`;
     } else {
-      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThanks for getting back to me! The AI Voice Agent is actually built to connect as an **add-on** to your existing phone line rather than replacing your website, answering calls after-hours so you never miss another booking.\n\nPlease let me know when you are free, and we will call you immediately to answer any questions!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThanks for getting back to me! The AI Voice Agent is actually built to connect as an **add-on** to your existing phone line rather than replacing your website, answering calls after-hours so you never miss another booking.\n\nPlease let me know when you are free, and we will call you immediately to answer any questions!`;
     }
     logs.push({ type: "observation", message: `Template fallback used (no LLM keys configured).`, timestamp: new Date().toISOString() });
   }
@@ -815,11 +816,11 @@ async function processCampaignAutopilot(campaignId, autoSend = false) {
       issueText = `slow mobile load speed (Google Lighthouse Performance Score: ${auditResult.score}/100, page load time: ${auditResult.fcp})`;
     }
 
-    const pitchSystemPrompt = `You are an expert B2B sales copywriter for ${profile.name}, a web and AI agency based in Fargo, ND. 
+    const pitchSystemPrompt = `You are an expert B2B sales copywriter for ${profile.name}, an agency based in Fargo, ND specializing in ${profile.coreService || 'AI Voice Automation'}. 
 Your goal is to write highly personalized, value-first cold pitch emails to local businesses. 
 Write in a friendly, professional, and conversational tone. Use specific details about the business's identified problem.
 Format the output as a ready-to-send email starting with "Subject:" on the first line, followed by a blank line, then the email body.
-Sign off with: Kuldeep Kataria, Founder, ${profile.name}.`;
+Do not include any extra footer text or notes at the bottom.`;
 
     const pitchUserPrompt = `Write a cold pitch email for the following local business:
 - Business Name: ${lead.name}
@@ -827,21 +828,23 @@ Sign off with: Kuldeep Kataria, Founder, ${profile.name}.`;
 - Industry/Niche: ${campaign.niche}
 - Website: ${lead.url}
 - Identified Problem: ${issueText}
+- Our Core Service: ${profile.coreService || 'AI Voice Automation'}
 - Our Tech Stack: ${profile.techStack}
 - Our Pricing Approach: ${profile.pricingFormula}
 
 The email should:
 1. Reference their specific problem naturally
-2. Explain how we solve it using our tech stack
+2. Explain how our ${profile.coreService || 'AI Voice Automation'} service solves it
 3. Offer a free live working demo before any payment
-4. Suggest a quick 10-minute coffee chat or call in ${campaign.location}
-5. Be under 200 words and feel human-written, not generic`;
+4. Suggest a quick 10-minute call to discuss
+5. Be under 150 words and feel human-written, not generic
+6. DO NOT include any placeholder brackets or footer text.`;
 
     let customPitch;
     const aiPitch = await generateTextHelper(pitchUserPrompt, pitchSystemPrompt, profile);
 
     if (aiPitch) {
-      customPitch = `### 🎯 PixelPrairie Lead Audit & Pitch Proposal\n\n**Target Business:** ${lead.name}\n**Location:** ${campaign.location}\n**Identified Conversion Block:** ${issueText}\n\n---\n\n#### 📧 AI-Generated Personalized Pitch Email\n\n${aiPitch}`;
+      customPitch = aiPitch.replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim();
     } else {
       const { result } = runAgent('outreach', `${campaign.location} - ${campaign.niche}`, profile);
       customPitch = result

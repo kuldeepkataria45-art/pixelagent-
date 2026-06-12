@@ -9,6 +9,7 @@ const ProfileSchema = new mongoose.Schema({
   twilioSid: { type: String, default: "" },
   twilioAuthToken: { type: String, default: "" },
   twilioNumber: { type: String, default: "" },
+  coreService: { type: String, default: "AI Voice Automation" },
   smtpHost: { type: String, default: "" },
   smtpPort: { type: String, default: "587" },
   smtpUser: { type: String, default: "" },

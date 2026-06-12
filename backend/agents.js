@@ -95,12 +95,6 @@ At **${agencyName}**, we specialize in building fast, modern websites using **${
 *   **Local Offer:** We build a **free live working demo** of your new website or voice agent before you pay us anything.
 
 Would you be open to a quick 10-minute chat or coffee in Fargo this week to see a live demo of how the AI receptionist answers calls?
-
-Best regards,
-
-**Kuldeep Kataria**
-*Founder, ${agencyName}*
-*kuldeepkataria45@gmail.com | +17014046442*
 `;
 
       return { logs, result };
@@ -264,11 +258,6 @@ Thanks for reporting the voice lag issue (**${issue}**).
 We are currently optimizing the AI voice pipeline. We are upgrading the AI translation model to a low-latency Flash model which is specifically built for mobile network conditions. This should cut response times in half.
 
 We are deploying this update this afternoon and will follow up once the faster model is live for you to test.
-
-Best regards,
-
-**Kuldeep Kataria**
-*Founder, PixelPrairie*
 `;
 
       return { logs, result };

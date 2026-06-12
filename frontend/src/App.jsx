@@ -288,13 +288,13 @@ function RoiCalculator() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [profile, setProfile] = useState({ name: 'PixelPrairie', techStack: '', pricingFormula: '', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '', geminiApiKey: '', openaiApiKey: '', googleMapsApiKey: '' });
+  const [profile, setProfile] = useState({ name: 'PixelPrairie', techStack: '', pricingFormula: '', coreService: 'AI Voice Automation', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '', geminiApiKey: '', openaiApiKey: '', googleMapsApiKey: '' });
   const [history, setHistory] = useState([]);
 
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
 
   // Profile Edit State
-  const [profileForm, setProfileForm] = useState({ name: '', techStack: '', pricingFormula: '', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '', geminiApiKey: '', openaiApiKey: '', googleMapsApiKey: '' });
+  const [profileForm, setProfileForm] = useState({ name: '', techStack: '', pricingFormula: '', coreService: 'AI Voice Automation', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '', geminiApiKey: '', openaiApiKey: '', googleMapsApiKey: '' });
   const [saveStatus, setSaveStatus] = useState(null);
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
   const [testSmtpStatus, setTestSmtpStatus] = useState(null);
@@ -1372,6 +1372,20 @@ export default function App() {
                     placeholder="e.g., PixelPrairie" 
                     required
                   />
+                </div>
+
+                <div className="form-group">
+                  <label>What service are you selling? (Core Service)</label>
+                  <select 
+                    value={profileForm.coreService || 'AI Voice Automation'} 
+                    onChange={e => setProfileForm({...profileForm, coreService: e.target.value})}
+                    style={{ width: '100%', padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: 'white', fontSize: '0.95rem' }}
+                  >
+                    <option value="AI Voice Automation">AI Voice Automation</option>
+                    <option value="Web Design & Development">Web Design & Development</option>
+                    <option value="Local SEO & Google Maps Ranking">Local SEO & Google Maps Ranking</option>
+                  </select>
+                  <small className="help-text">This instantly reprograms the AI Brain to scrape and write pitches for this specific service!</small>
                 </div>
 
                 <div className="form-group">
