@@ -445,8 +445,12 @@ app.all('/api/voice/twiml', (req, res) => {
 });
 
 app.get('/api/history', async (req, res) => {
-  const history = await History.find({}).sort({ timestamp: -1 });
-  res.json(history);
+  try {
+    const history = await History.find({}).sort({ timestamp: -1 });
+    res.json(history);
+  } catch (err) {
+    res.status(500).json([]);
+  }
 });
 
 app.post('/api/agents/run', async (req, res) => {
@@ -476,8 +480,12 @@ app.post('/api/agents/run', async (req, res) => {
 
 // Autopilot Campaigns Routes
 app.get('/api/campaigns', async (req, res) => {
-  const campaigns = await Campaign.find({}).sort({ timestamp: -1 });
-  res.json(campaigns);
+  try {
+    const campaigns = await Campaign.find({}).sort({ timestamp: -1 });
+    res.json(campaigns);
+  } catch (err) {
+    res.status(500).json([]);
+  }
 });
 
 app.post('/api/campaigns', async (req, res) => {
@@ -527,8 +535,12 @@ app.post('/api/campaigns/:campaignId/leads/:leadId/send', async (req, res) => {
 });
 
 app.get('/api/inbox', async (req, res) => {
-  const inbox = await Inbox.find({}).sort({ timestamp: -1 });
-  res.json(inbox);
+  try {
+    const inbox = await Inbox.find({}).sort({ timestamp: -1 });
+    res.json(inbox);
+  } catch (err) {
+    res.status(500).json([]);
+  }
 });
 
 app.post('/api/inbox/:id/reply', async (req, res) => {
