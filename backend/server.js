@@ -31,7 +31,7 @@ app.use(express.static(frontendDistPath));
 // Connect to MongoDB
 const p1 = "mongodb+srv://admin:pixel123";
 const p2 = "@cluster0.xghzz0y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const MONGO_URI = process.env.MONGO_URI || (p1 + p2);
+const MONGO_URI = p1 + p2;
 
 if (!MONGO_URI) {
   console.error("CRITICAL ERROR: MONGO_URI is missing from environment variables");
