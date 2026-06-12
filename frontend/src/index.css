@@ -1660,6 +1660,9 @@ button, .btn-primary, .btn-secondary {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+  .crt-overlay, .cyber-grid-backdrop {
+    display: none !important;
+  }
   .app-container { flex-direction: column; }
   .sidebar {
     width: 100%;
