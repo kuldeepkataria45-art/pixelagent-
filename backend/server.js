@@ -260,7 +260,12 @@ async function generateTextHelper(prompt, systemInstruction = "", profile) {
 // Routes
 
 app.get('/api/profile', async (req, res) => {
-  res.json(await getProfile());
+  try {
+    res.json(await getProfile());
+  } catch (err) {
+    console.error("Database error in GET /api/profile:", err);
+    res.status(500).json({ error: "Database connection failed. Check your MongoDB Atlas Network Access (IP Whitelist)." });
+  }
 });
 
 app.post('/api/profile', async (req, res) => {
@@ -269,8 +274,13 @@ app.post('/api/profile', async (req, res) => {
     return res.status(400).json({ error: "Missing required profile fields" });
   }
   
-  await Profile.findOneAndUpdate({}, newProfile, { upsert: true, new: true });
-  res.json({ success: true, profile: newProfile });
+  try {
+    await Profile.findOneAndUpdate({}, newProfile, { upsert: true, new: true });
+    res.json({ success: true, profile: newProfile });
+  } catch (err) {
+    console.error("Database error in POST /api/profile:", err);
+    res.status(500).json({ error: "Database save failed. Ensure MongoDB Atlas Network Access allows connections from anywhere (0.0.0.0/0)." });
+  }
 });
 
 app.post('/api/profile/test-email', async (req, res) => {
