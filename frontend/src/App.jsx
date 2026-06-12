@@ -748,8 +748,12 @@ export default function App() {
       reply = `I would love to walk you through it. Please let me know when you are free, and we will call you immediately!`;
     }
     // Confirmed booking (Yes)
+    else if (query.includes('yes') || query.includes('sure') || query.includes('okay') || query.includes('ok') || query.includes('yeah') || query.includes('works') || query.includes('perfect') || query.includes('great') || query.includes('good')) {
+      reply = `Fantastic! We will call you immediately. Talk to you soon, and have a wonderful day!`;
+      setTimeout(() => {
+        speakText(reply, () => {
           setSimTranscript(prev => [...prev, { sender: 'agent', text: reply }]);
-          setSimTranscript(prev => [...prev, { sender: 'system', text: `Call ended. Meeting booked for ${selectedTime} and synced to iPhone Calendar.` }]);
+          setSimTranscript(prev => [...prev, { sender: 'system', text: `Call ended. Will call back.` }]);
           setSimStatus('idle');
           if (recognitionRef.current) {
             recognitionRef.current.stop();
@@ -757,7 +761,7 @@ export default function App() {
         });
       }, 500);
       return;
-    } 
+    }
     // Rejected booking (No)
     else if (query.includes('no') || query.includes('bye') || query.includes('stop') || query.includes('hang up') || query.includes('cancel') || query.includes('exit')) {
       reply = `No problem at all! If you ever want to see how a low-latency AI receptionist can help PixelPrairie grow, feel free to call back. Have a great day!`;
