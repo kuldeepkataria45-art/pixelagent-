@@ -486,7 +486,7 @@ app.get('/api/campaigns', async (req, res) => {
 });
 
 app.post('/api/campaigns', async (req, res) => {
-  const { niche, location, size } = req.body;
+  const { niche, location, size, autoSend } = req.body;
   if (!niche || !location || !size) {
     return res.status(400).json({ error: "Missing niche, location, or size" });
   }
@@ -501,7 +501,7 @@ app.post('/api/campaigns', async (req, res) => {
     leads: []
   });
 
-  processCampaignAutopilot(newCampaign.id);
+  processCampaignAutopilot(newCampaign.id, autoSend);
 
   res.status(201).json(newCampaign);
 });
@@ -733,8 +733,8 @@ async function fetchPageSpeedStats(domain, apiKey) {
   return { success: false };
 }
 
-async function processCampaignAutopilot(campaignId) {
-  console.log(`Starting autopilot processing for campaign ${campaignId}`);
+async function processCampaignAutopilot(campaignId, autoSend = false) {
+  console.log(`Starting autopilot processing for campaign ${campaignId}. AutoSend: ${autoSend}`);
 
   let campaign = await Campaign.findOne({ id: campaignId });
   if (!campaign) return;
@@ -826,6 +826,19 @@ The email should:
     campaign.leads[i].status = "drafted";
     campaign.leads[i].pitch = customPitch;
     campaign.leads[i].aiGenerated = !!aiPitch;
+
+    if (autoSend && customPitch) {
+      try {
+        const emailSubject = `Outreach: Customer bookings audit for ${lead.name}`;
+        await sendMailHelper(lead.email, emailSubject, customPitch, profile);
+        campaign.leads[i].status = "sent";
+        simulateInboundReply(campaign, lead);
+        console.log(`[AutoSend] Successfully dispatched email to ${lead.email}`);
+      } catch (err) {
+        console.error(`[AutoSend Error] Failed to send email to ${lead.email}:`, err.message);
+      }
+    }
+
     campaign.progress = Math.min(90, Math.floor(10 + ((i + 0.8) * (90 / selectedLeads.length))));
     await campaign.save();
   }

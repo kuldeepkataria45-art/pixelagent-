@@ -332,7 +332,7 @@ export default function App() {
   // Autopilot Campaigns State
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [newCampaign, setNewCampaign] = useState({ niche: 'Hair Salon', location: 'Fargo, ND', size: '3' });
+  const [newCampaign, setNewCampaign] = useState({ niche: 'Hair Salon', location: 'Fargo, ND', size: '3', autoSend: false });
   const [expandedLeadId, setExpandedLeadId] = useState(null);
   const [campaignCreating, setCampaignCreating] = useState(false);
 
