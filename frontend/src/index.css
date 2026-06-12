@@ -1657,3 +1657,58 @@ button, .btn-primary, .btn-secondary {
     box-shadow: 0 0 20px rgba(0, 242, 254, 0.5), 0 0 6px rgba(139, 92, 246, 0.3);
   }
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .app-container { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 242, 254, 0.12);
+    box-shadow: none;
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 16px;
+  }
+  .metrics-grid, .dashboard-grid, .autopilot-layout, .sandbox-grid, .room-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .history-table-wrapper {
+    overflow-x: auto;
+  }
+  .history-table {
+    min-width: 600px;
+  }
+  .glass-panel, .cyber-panel {
+    padding: 16px !important;
+  }
+  .lead-pitch-body {
+    max-height: 250px;
+  }
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .nav-menu {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .nav-item {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  .logo-section {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+  .room-controls, .room-console {
+    max-height: none;
+  }
+}

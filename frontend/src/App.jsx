@@ -1900,7 +1900,7 @@ export default function App() {
                         </td>
                         <td>
                           <span className={`c-status-badge status-${msg.status === 'meeting_booked' ? 'completed' : msg.status === 'replied' ? 'running' : 'searching'}`}>
-                            {msg.status === 'unread' ? 'Objection Unread' : msg.status === 'replied' ? 'Objection Replied' : 'Meeting Booked'}
+                            {msg.status === 'unread' ? 'Objection Unread' : msg.status === 'replied' ? 'Objection Replied' : 'Follow-up Sent'}
                           </span>
                         </td>
                         <td>
@@ -1941,15 +1941,27 @@ export default function App() {
               </div>
 
               <div className="room-layout">
-                {/* Inbound Objection Card */}
-                <div className="room-controls glass-panel">
-                  <h3>Received Objection Email</h3>
-                  <div className="history-list-item" style={{ background: 'rgba(0,0,0,0.2)', margin: '16px 0', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <p className="lead-contact"><strong>From:</strong> {selectedMessage.leadName} ({selectedMessage.leadEmail})</p>
-                    <p className="lead-contact"><strong>Subject:</strong> {selectedMessage.subject}</p>
-                    <p className="lead-contact"><strong>Received:</strong> {new Date(selectedMessage.timestamp).toLocaleString()}</p>
-                    <hr style={{ margin: '12px 0', borderColor: 'var(--border-glass)' }} />
-                    <p style={{ color: 'white', whiteSpace: 'pre-line', lineHeight: '1.5' }}>"{selectedMessage.content}"</p>
+                {/* Email Thread UI */}
+                <div className="room-controls glass-panel" style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem', color: 'white' }}>
+                      {selectedMessage.leadName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{selectedMessage.leadName}</h3>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>&lt;{selectedMessage.leadEmail}&gt;</p>
+                    </div>
+                  </div>
+                  
+                  <div className="history-list-item" style={{ background: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '0.85rem' }}>
+                      <strong style={{ color: 'white' }}>Subject: {selectedMessage.subject}</strong>
+                      <span style={{ color: 'var(--text-muted)' }}>{new Date(selectedMessage.timestamp).toLocaleString()}</span>
+                    </div>
+                    <hr style={{ margin: '12px 0', borderColor: 'rgba(255,255,255,0.05)' }} />
+                    <p style={{ color: 'white', whiteSpace: 'pre-line', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                      {selectedMessage.content}
+                    </p>
                   </div>
 
                   <button 
@@ -2031,7 +2043,7 @@ export default function App() {
                         disabled={selectedMessage.status === 'meeting_booked'}
                         onClick={handleBookMeeting}
                       >
-                        {selectedMessage.status === 'meeting_booked' ? '📅 Meeting Booked (Synced)' : 'Send Email & Book iPhone Calendar slots'}
+                        {selectedMessage.status === 'meeting_booked' ? '✓ Email Sent' : 'Send Reply & Ask to Call'}
                       </button>
                       <button 
                         className="btn-secondary"
