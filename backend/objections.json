@@ -1,0 +1,24 @@
+{
+  "price": {
+    "category": "Price / Budget Constraint",
+    "tactics": [
+      "No Upfront Cost: Highlight that we build a free working demo site/agent first, so they see the value before paying anything.",
+      "High ROI: An AI receptionist answers 100% of missed calls instantly, saving average local businesses 10+ hours a week and preventing booking loss.",
+      "Low Hosting Cost: Explain that Next.js hosting on Vercel is free/extremely cheap, avoiding recurring legacy developer fees."
+    ]
+  },
+  "trust": {
+    "category": "AI Voice Realism / Trust",
+    "tactics": [
+      "Human-Like Quality: We use ElevenLabs voice synthesis, which captures human breath, tones, and low latency (<1s response time).",
+      "Live iPhone Call Test: Offer to configure a test number so they can call the AI agent from their phone and test the realism directly."
+    ]
+  },
+  "website": {
+    "category": "Already Has a Website",
+    "tactics": [
+      "Add-On Feature: Clarify that they don't need to replace their website. The AI Voice receptionist can be linked to their existing phone line as an upgrade.",
+      "Traffic Capture: Modern Next.js pages can be hosted on a subdomain (e.g. book.theirsite.com) purely for customer booking campaigns."
+    ]
+  }
+}
