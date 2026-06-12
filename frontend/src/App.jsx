@@ -545,7 +545,7 @@ export default function App() {
     
     const prompts = [
       "Hello? Are you still there?",
-      "Just checking in, did you want me to send a calendar invite to your iPhone?",
+      "Just checking in, did you have any other questions about the AI Voice agents?",
       "Are you there? Let me know if you want to test the voice agent some more."
     ];
     const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
@@ -713,47 +713,41 @@ export default function App() {
     
     // Objections & Price
     if (query.includes('price') || query.includes('cost') || query.includes('budget') || query.includes('money') || query.includes('expensive') || query.includes('charge')) {
-      reply = `I completely understand that budget is top of mind. At ${profile.name || 'PixelPrairie'}, we actually build a free, live working demo of your website or voice receptionist first. You get to test it and see real results before you pay us anything. Would you like me to send a calendar invitation to your email for a quick 10-minute demo this Tuesday at 2:00 PM?`;
+      reply = `I completely understand that budget is top of mind. At ${profile.name || 'PixelPrairie'}, we actually build a free, live working demo of your website or voice receptionist first. You get to test it and see real results before you pay us anything. Please let me know when you are free, and we can jump on a quick call to discuss it!`;
     } 
     // Realism & Voice quality
     else if (query.includes('robot') || query.includes('fake') || query.includes('human') || query.includes('real') || query.includes('voice') || query.includes('robotic')) {
-      reply = `That's a very fair concern. Many bots sound robotic and turn customers off. That's why we use ElevenLabs' state-of-the-art neural engine—it captures natural human tone, inflections, breathing, and has less than a 1-second delay so customers feel like they are talking to a real receptionist. I can send an invitation directly to your iPhone calendar so we can do a live phone test. Does Tuesday at 2:00 PM work?`;
+      reply = `That's a very fair concern. Many bots sound robotic and turn customers off. That's why we use ElevenLabs' state-of-the-art neural engine—it captures natural human tone, inflections, breathing, and has less than a 1-second delay so customers feel like they are talking to a real receptionist. Please let me know when you are free to do a live phone test!`;
     } 
     // Existing Setup / Website
     else if (query.includes('already have') || query.includes('website') || query.includes('exist') || query.includes('site')) {
-      reply = `I understand you already have a website! Our AI Voice agent is actually built to connect as an add-on to your phone line rather than replacing your site, answering calls after-hours so you never miss another customer booking. I can send an invitation directly to your calendar to show you how. Does Tuesday at 2:00 PM or Thursday at 10:00 AM CST work?`;
+      reply = `I understand you already have a website! Our AI Voice agent is actually built to connect as an add-on to your phone line rather than replacing your site, answering calls after-hours so you never miss another customer booking. Let me know when you are free to chat about how it works!`;
     } 
     // Who is this? / Creator FAQ
     else if (query.includes('who is this') || query.includes('who are you') || query.includes('your name') || query.includes('who built you') || query.includes('who made you')) {
-      reply = `I am the AI assistant for ${profile.name || 'PixelPrairie'}. Kuldeep Kataria built me to demonstrate how low-latency ElevenLabs conversational voice agents can help local Fargo-Moorhead businesses automate call bookings. Would you like to schedule a quick 10-minute walkthrough this Tuesday at 2:00 PM?`;
+      reply = `I am the AI assistant for ${profile.name || 'PixelPrairie'}. Kuldeep Kataria built me to demonstrate how low-latency ElevenLabs conversational voice agents can help local Fargo-Moorhead businesses automate call bookings. Let me know when you have some free time to chat!`;
     } 
     // How does it work? / Twilio FAQ
     else if (query.includes('how does it work') || query.includes('how do you work') || query.includes('twilio') || query.includes('setup') || query.includes('how to connect')) {
-      reply = `It's very simple! We map a local Fargo-Moorhead 701 number via Twilio directly to your ElevenLabs voice receptionist. When a customer dials, the AI answers instantly, handles bookings, and syncs them directly to your calendar. Would you like to schedule a 10-minute call this Tuesday at 2:00 PM to see a live demo?`;
+      reply = `It's very simple! We map a local Fargo-Moorhead 701 number via Twilio directly to your ElevenLabs voice receptionist. When a customer dials, the AI answers instantly, handles bookings, and syncs them directly to your system. Please let me know when you are free, and we can call you to explain more!`;
     } 
     // Niches served / Fargo
     else if (query.includes('niche') || query.includes('industry') || query.includes('fargo') || query.includes('salon') || query.includes('daycare') || query.includes('landscap') || query.includes('lawn')) {
-      reply = `We specialize in local Fargo-Moorhead services, including hair salons, childcare academies, and landscaping/snow removal services. I can simulate typical bookings for any of these! Would you like me to send a calendar invite for a quick 10-minute review this Tuesday at 2:00 PM?`;
+      reply = `We specialize in local Fargo-Moorhead services, including hair salons, childcare academies, and landscaping/snow removal services. I can simulate typical bookings for any of these! Let me know when you are free to talk.`;
     } 
     // Timeline / How long does it take
     else if (query.includes('timeline') || query.includes('how long') || query.includes('days') || query.includes('duration') || query.includes('time to build')) {
-      reply = `We can design, configure, and launch your custom website and ElevenLabs voice agent in just 5 to 7 days, including prompt training tailored for your specific business. I can send an invitation to your calendar to discuss your timeline. Would Tuesday at 2:00 PM work?`;
+      reply = `We can design, configure, and launch your custom website and ElevenLabs voice agent in just 5 to 7 days, including prompt training tailored for your specific business. Let me know when you are free to discuss your timeline!`;
     } 
     // Services / Features
     else if (query.includes('service') || query.includes('feature') || query.includes('what can you do') || query.includes('capabilities')) {
-      reply = `Our AI agents can answer common business FAQs, book client appointments, send automated parent check-ins or booking text alerts, and sync everything directly to your iPhone calendar. Would you be open to a quick 10-minute chat this Tuesday at 2:00 PM to see it?`;
+      reply = `Our AI agents can answer common business FAQs, book client appointments, send automated parent check-ins or booking text alerts, and sync everything directly to your system. Let me know when you are free, and we can call you to chat about it!`;
     }
     // Calendar integrations
     else if (query.includes('calendar') || query.includes('schedule') || query.includes('appointment') || query.includes('book')) {
-      reply = `I have openings for a quick 10-minute walkthrough this Tuesday at 2:00 PM or Thursday at 10:00 AM CST. Which one works best to send a calendar invite directly to your iPhone calendar?`;
+      reply = `I would love to walk you through it. Please let me know when you are free, and we will call you immediately!`;
     }
     // Confirmed booking (Yes)
-    else if (query.includes('yes') || query.includes('sure') || query.includes('work') || query.includes('book') || query.includes('tuesday') || query.includes('thursday') || query.includes('calendar') || query.includes('invite') || query.includes('ok') || query.includes('fine') || query.includes('sounds good')) {
-      const selectedTime = query.includes('thursday') ? 'Thursday at 10:00 AM CST' : 'Tuesday at 2:00 PM CST';
-      reply = `Perfect! I've booked your 10-minute AI walkthrough for ${selectedTime}. I am sending a calendar invitation directly to your inbox that will sync to your iPhone calendar. Looking forward to showing you the demo! Have a wonderful day!`;
-      
-      setTimeout(() => {
-        speakText(reply, () => {
           setSimTranscript(prev => [...prev, { sender: 'agent', text: reply }]);
           setSimTranscript(prev => [...prev, { sender: 'system', text: `Call ended. Meeting booked for ${selectedTime} and synced to iPhone Calendar.` }]);
           setSimStatus('idle');
