@@ -1,5 +1,3 @@
-// C:\Users\Tbodv\.gemini\antigravity\scratch\business-agent-workspace\backend\server.js
-
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -9,7 +7,14 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
+import mongoose from 'mongoose';
 import { runAgent } from './agents.js';
+
+// Import MongoDB Models
+import Profile from './models/Profile.js';
+import Campaign from './models/Campaign.js';
+import Inbox from './models/Inbox.js';
+import History from './models/History.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,70 +28,48 @@ app.use(express.json());
 const frontendDistPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDistPath));
 
-const PROFILE_PATH = path.join(__dirname, 'profile.json');
-const HISTORY_PATH = path.join(__dirname, 'history.json');
-const CAMPAIGNS_PATH = path.join(__dirname, 'campaigns.json');
-const OBJECTIONS_PATH = path.join(__dirname, 'objections.json');
-const INBOX_PATH = path.join(__dirname, 'inbox.json');
+// Connect to MongoDB
+if (!process.env.MONGO_URI) {
+  console.error("CRITICAL ERROR: MONGO_URI is missing from .env");
+  process.exit(1);
+}
 
-// Helper to read JSON safely
-const readJsonFile = (filePath, defaultVal = {}) => {
-  try {
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error(`Error reading file ${filePath}:`, err);
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Successfully connected to MongoDB Atlas!'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+
+// Helper to get profile with environment variables fallback
+const getProfile = async () => {
+  let profile = await Profile.findOne({});
+  if (!profile) {
+    profile = await Profile.create({
+      name: "PixelPrairie",
+      techStack: "Next.js 16, React, Tailwind CSS",
+      pricingFormula: "Custom value-based pricing"
+    });
   }
-  return defaultVal;
-};
-
-// Helper to write JSON safely
-const writeJsonFile = (filePath, data) => {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error(`Error writing file ${filePath}:`, err);
-    return false;
-  }
-};
-
-// Helper to read profile with environment variables fallback
-const getProfile = () => {
-  const fileProfile = readJsonFile(PROFILE_PATH, {
-    name: "PixelPrairie",
-    techStack: "Next.js 16, React, Tailwind CSS",
-    pricingFormula: "Custom value-based pricing"
-  });
 
   return {
-    name: fileProfile.name || "PixelPrairie",
-    techStack: fileProfile.techStack || "Next.js 16, React, Tailwind CSS",
-    pricingFormula: fileProfile.pricingFormula || "Custom value-based pricing",
-    elevenlabsApiKey: process.env.ELEVENLABS_API_KEY || fileProfile.elevenlabsApiKey || "",
-    elevenlabsAgentId: process.env.ELEVENLABS_AGENT_ID || fileProfile.elevenlabsAgentId || "",
-    twilioSid: process.env.TWILIO_SID || fileProfile.twilioSid || "",
-    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || fileProfile.twilioAuthToken || "",
-    twilioNumber: process.env.TWILIO_NUMBER || fileProfile.twilioNumber || "",
-    smtpHost: process.env.SMTP_HOST || fileProfile.smtpHost || "",
-    smtpPort: process.env.SMTP_PORT || fileProfile.smtpPort || "587",
-    smtpUser: process.env.SMTP_USER || fileProfile.smtpUser || "",
-    smtpPass: process.env.SMTP_PASS || fileProfile.smtpPass || "",
-    smtpSender: process.env.SMTP_SENDER || fileProfile.smtpSender || "",
-    googleApiKey: process.env.GOOGLE_API_KEY || fileProfile.googleApiKey || "",
-    geminiApiKey: process.env.GEMINI_API_KEY || fileProfile.geminiApiKey || "",
-    openaiApiKey: process.env.OPENAI_API_KEY || fileProfile.openaiApiKey || "",
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || fileProfile.googleMapsApiKey || ""
+    name: profile.name || "PixelPrairie",
+    techStack: profile.techStack || "Next.js 16, React, Tailwind CSS",
+    pricingFormula: profile.pricingFormula || "Custom value-based pricing",
+    elevenlabsApiKey: process.env.ELEVENLABS_API_KEY || profile.elevenlabsApiKey || "",
+    elevenlabsAgentId: process.env.ELEVENLABS_AGENT_ID || profile.elevenlabsAgentId || "",
+    twilioSid: process.env.TWILIO_SID || profile.twilioSid || "",
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || profile.twilioAuthToken || "",
+    twilioNumber: process.env.TWILIO_NUMBER || profile.twilioNumber || "",
+    smtpHost: process.env.SMTP_HOST || profile.smtpHost || "",
+    smtpPort: process.env.SMTP_PORT || profile.smtpPort || "587",
+    smtpUser: process.env.SMTP_USER || profile.smtpUser || "",
+    smtpPass: process.env.SMTP_PASS || profile.smtpPass || "",
+    smtpSender: process.env.SMTP_SENDER || profile.smtpSender || "",
+    googleApiKey: process.env.GOOGLE_API_KEY || profile.googleApiKey || "",
+    geminiApiKey: process.env.GEMINI_API_KEY || profile.geminiApiKey || "",
+    openaiApiKey: process.env.OPENAI_API_KEY || profile.openaiApiKey || "",
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || profile.googleMapsApiKey || ""
   };
 };
-
-
-// Initialize databases if not exists
-if (!fs.existsSync(HISTORY_PATH)) writeJsonFile(HISTORY_PATH, []);
-if (!fs.existsSync(CAMPAIGNS_PATH)) writeJsonFile(CAMPAIGNS_PATH, []);
-if (!fs.existsSync(INBOX_PATH)) writeJsonFile(INBOX_PATH, []);
 
 const getFallbackLeads = (niche, location) => {
   const safeNiche = niche.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -119,12 +102,11 @@ async function fetchGooglePlacesLeads(niche, location, apiKey, limit = 3) {
   }
 
   const leads = [];
-  const results = searchData.results.slice(0, limit + 2); // get a few extra in case some lack websites
+  const results = searchData.results.slice(0, limit + 2);
 
   for (const place of results) {
     if (leads.length >= limit) break;
 
-    // Fetch details to get website and phone number
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,website,formatted_phone_number&key=${apiKey}`;
     const detailsRes = await fetch(detailsUrl);
     const detailsData = await detailsRes.json();
@@ -132,30 +114,32 @@ async function fetchGooglePlacesLeads(niche, location, apiKey, limit = 3) {
     if (detailsData.status === "OK" && detailsData.result) {
       const details = detailsData.result;
       
-      // We strongly prefer leads with websites so we can run PageSpeed audits
       const website = details.website || `${place.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
       const domain = website.replace(/^https?:\/\//, '').replace(/\/$/, '');
       const phone = details.formatted_phone_number || "No phone listed";
       const email = `info@${domain}`;
 
       leads.push({
+        id: Math.random().toString(36).substring(2, 9),
         name: details.name || place.name,
         url: domain,
         issue: "missing automated conversational AI receptionist and poor local SEO optimization",
         email: email,
-        phone: phone
+        phone: phone,
+        status: "discovered",
+        pitch: "",
+        meetingBooked: false,
+        aiGenerated: false
       });
     }
   }
 
-  // Fallback if the scraper fails to find any leads (very rare)
   if (leads.length === 0) {
     throw new Error(`No local businesses found for ${niche} in ${location}. Try a different location.`);
   }
 
   return leads;
 }
-
 
 // SMTP Nodemailer Sender Helper
 async function sendMailHelper(to, subject, body, profile) {
@@ -198,9 +182,7 @@ async function sendMailHelper(to, subject, body, profile) {
 // ──────────────────────────────────────────────────────────
 //  AI BRAIN — LLM Text Generator (Gemini → OpenAI → Fallback)
 // ──────────────────────────────────────────────────────────
-async function generateTextHelper(prompt, systemInstruction = "") {
-  const profile = getProfile();
-
+async function generateTextHelper(prompt, systemInstruction = "", profile) {
   // ── 1. Attempt Google Gemini 2.5 Flash ──
   if (profile.geminiApiKey) {
     try {
@@ -227,7 +209,6 @@ async function generateTextHelper(prompt, systemInstruction = "") {
       const data = await response.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (text) {
-        console.log("[AI Brain] Gemini response received successfully.");
         return text.trim();
       }
       throw new Error("Gemini returned empty response.");
@@ -264,7 +245,6 @@ async function generateTextHelper(prompt, systemInstruction = "") {
       const data = await response.json();
       const text = data?.choices?.[0]?.message?.content;
       if (text) {
-        console.log("[AI Brain] OpenAI response received successfully.");
         return text.trim();
       }
       throw new Error("OpenAI returned empty response.");
@@ -273,29 +253,28 @@ async function generateTextHelper(prompt, systemInstruction = "") {
     }
   }
 
-  // ── 3. No API keys or both failed — return null for template fallback ──
   console.log("[AI Brain] No active LLM keys configured. Using template fallback.");
   return null;
 }
 
 // Routes
 
-app.get('/api/profile', (req, res) => {
-  res.json(getProfile());
+app.get('/api/profile', async (req, res) => {
+  res.json(await getProfile());
 });
 
-app.post('/api/profile', (req, res) => {
+app.post('/api/profile', async (req, res) => {
   const newProfile = req.body;
   if (!newProfile.name || !newProfile.techStack || !newProfile.pricingFormula) {
     return res.status(400).json({ error: "Missing required profile fields" });
   }
-  writeJsonFile(PROFILE_PATH, newProfile);
+  
+  await Profile.findOneAndUpdate({}, newProfile, { upsert: true, new: true });
   res.json({ success: true, profile: newProfile });
 });
 
-// Test SMTP connection endpoint
 app.post('/api/profile/test-email', async (req, res) => {
-  const profile = getProfile();
+  const profile = await getProfile();
   if (!profile.smtpHost || !profile.smtpUser || !profile.smtpPass) {
     return res.status(400).json({ error: "SMTP host, user, and password must be set first in your profile." });
   }
@@ -313,16 +292,14 @@ app.post('/api/profile/test-email', async (req, res) => {
   }
 });
 
-// ElevenLabs Text-to-Speech proxy endpoint for natural female voice synthesis
 app.post('/api/voice/tts', async (req, res) => {
   const { text } = req.body;
-  const profile = getProfile();
+  const profile = await getProfile();
 
   if (!profile.elevenlabsApiKey) {
     return res.status(400).json({ error: "ElevenLabs API Key must be configured in your profile to use neural TTS." });
   }
 
-  // Voice ID: Rachel (21m00Tcm4TlvDq8ikWAM)
   const voiceId = "21m00Tcm4TlvDq8ikWAM"; 
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
@@ -358,29 +335,25 @@ app.post('/api/voice/tts', async (req, res) => {
   }
 });
 
-// Outbound phone dialer endpoint
 app.post('/api/voice/dial', async (req, res) => {
   const { toNumber, method, publicUrl } = req.body;
-  const profile = getProfile();
+  const profile = await getProfile();
 
   if (!toNumber) {
     return res.status(400).json({ error: "Destination phone number (toNumber) is required." });
   }
 
-  // If ElevenLabs direct outbound call method is requested
   if (method === 'elevenlabs') {
     if (!profile.elevenlabsApiKey || !profile.elevenlabsAgentId) {
       return res.status(400).json({ error: "ElevenLabs API Key and Agent ID must be set in your profile." });
     }
 
     try {
-      console.log(`Triggering ElevenLabs native outbound call to ${toNumber}...`);
       const payload = {
         agent_id: profile.elevenlabsAgentId,
         to_number: toNumber
       };
       
-      // If the user configured an ElevenLabs phone number ID (e.g. PN...), use it
       if (profile.twilioNumber && (profile.twilioNumber.startsWith('pn_') || profile.twilioNumber.startsWith('PN'))) {
         payload.agent_phone_number_id = profile.twilioNumber;
       }
@@ -401,12 +374,10 @@ app.post('/api/voice/dial', async (req, res) => {
 
       return res.json({ success: true, message: "Outbound call successfully initiated via ElevenLabs!", details: elData });
     } catch (err) {
-      console.error("ElevenLabs Outbound Call Error:", err.message);
       return res.status(500).json({ error: `ElevenLabs API Call failed: ${err.message}` });
     }
   }
 
-  // If Twilio custom webhook method is requested
   if (method === 'twilio') {
     if (!profile.twilioSid || !profile.twilioAuthToken || !profile.twilioNumber) {
       return res.status(400).json({ error: "Twilio Account SID, Auth Token, and Twilio Phone Number must be set in your profile." });
@@ -415,13 +386,10 @@ app.post('/api/voice/dial', async (req, res) => {
       return res.status(400).json({ error: "ElevenLabs Agent ID must be set in your profile." });
     }
 
-    // Determine the TwiML webhook URL
     const callbackBase = publicUrl || `http://localhost:5000`;
     const twimlUrl = `${callbackBase}/api/voice/twiml?agent_id=${encodeURIComponent(profile.elevenlabsAgentId)}`;
 
     try {
-      console.log(`Initiating Twilio custom call to ${toNumber} via ${profile.twilioNumber} with webhook ${twimlUrl}...`);
-      
       const auth = Buffer.from(`${profile.twilioSid}:${profile.twilioAuthToken}`).toString('base64');
       const params = new URLSearchParams();
       params.append('To', toNumber);
@@ -444,23 +412,19 @@ app.post('/api/voice/dial', async (req, res) => {
 
       return res.json({ success: true, message: "Outbound call successfully initiated via Twilio!", details: twilioData });
     } catch (err) {
-      console.error("Twilio Call Trigger Error:", err.message);
       return res.status(500).json({ error: `Twilio API Call failed: ${err.message}` });
     }
   }
 
-  return res.status(400).json({ error: "Invalid calling method specified. Choose 'elevenlabs' or 'twilio'." });
+  return res.status(400).json({ error: "Invalid calling method specified." });
 });
 
-// TwiML callback route for Twilio custom calling
 app.all('/api/voice/twiml', (req, res) => {
   const agentId = req.query.agent_id || req.body.agent_id;
   if (!agentId) {
-    console.error("TwiML callback error: Missing agent_id parameter.");
     return res.status(400).send("Missing agent_id");
   }
 
-  console.log(`Serving TwiML response for agent_id: ${agentId}`);
   res.type('text/xml');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -470,144 +434,125 @@ app.all('/api/voice/twiml', (req, res) => {
 </Response>`);
 });
 
-app.get('/api/history', (req, res) => {
-  const history = readJsonFile(HISTORY_PATH, []);
+app.get('/api/history', async (req, res) => {
+  const history = await History.find({}).sort({ timestamp: -1 });
   res.json(history);
 });
 
-app.post('/api/agents/run', (req, res) => {
+app.post('/api/agents/run', async (req, res) => {
   const { agentId, input } = req.body;
   if (!agentId || !input) {
     return res.status(400).json({ error: "Missing agentId or input" });
   }
 
-  const profile = getProfile();
+  const profile = await getProfile();
 
   try {
     const { logs, result } = runAgent(agentId, input, profile);
 
-    const history = readJsonFile(HISTORY_PATH, []);
-    const newRecord = {
+    const newRecord = await History.create({
       id: Math.random().toString(36).substring(2, 9),
-      agentId,
-      input,
-      timestamp: new Date().toISOString(),
-      result
-    };
-    history.unshift(newRecord);
-    writeJsonFile(HISTORY_PATH, history);
+      url: "n/a",
+      niche: "playground",
+      result,
+      timestamp: new Date()
+    });
 
     res.json({ logs, result, historyItem: newRecord });
   } catch (err) {
-    console.error("Agent error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // Autopilot Campaigns Routes
-app.get('/api/campaigns', (req, res) => {
-  const campaigns = readJsonFile(CAMPAIGNS_PATH, []);
+app.get('/api/campaigns', async (req, res) => {
+  const campaigns = await Campaign.find({}).sort({ timestamp: -1 });
   res.json(campaigns);
 });
 
-app.post('/api/campaigns', (req, res) => {
+app.post('/api/campaigns', async (req, res) => {
   const { niche, location, size } = req.body;
   if (!niche || !location || !size) {
     return res.status(400).json({ error: "Missing niche, location, or size" });
   }
 
-  const campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-  const newCampaign = {
+  const newCampaign = await Campaign.create({
     id: Math.random().toString(36).substring(2, 9),
     niche,
     location,
     size: parseInt(size, 10),
     status: "searching",
     progress: 0,
-    leads: [],
-    timestamp: new Date().toISOString()
-  };
-
-  campaigns.unshift(newCampaign);
-  writeJsonFile(CAMPAIGNS_PATH, campaigns);
+    leads: []
+  });
 
   processCampaignAutopilot(newCampaign.id);
 
   res.status(201).json(newCampaign);
 });
 
-// Mock Pitch Sent -> Triggers background lead reply
 app.post('/api/campaigns/:campaignId/leads/:leadId/send', async (req, res) => {
   const { campaignId, leadId } = req.params;
-  const campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-  const cIndex = campaigns.findIndex(c => c.id === campaignId);
+  
+  const campaign = await Campaign.findOne({ id: campaignId });
+  if (!campaign) return res.status(404).json({ error: "Campaign not found" });
 
-  if (cIndex === -1) {
-    return res.status(404).json({ error: "Campaign not found" });
-  }
+  const lead = campaign.leads.find(l => l.id === leadId);
+  if (!lead) return res.status(404).json({ error: "Lead not found" });
 
-  const leadIndex = campaigns[cIndex].leads.findIndex(l => l.id === leadId);
-  if (leadIndex === -1) {
-    return res.status(404).json({ error: "Lead not found" });
-  }
-
-  const lead = campaigns[cIndex].leads[leadIndex];
-  const profile = getProfile();
+  const profile = await getProfile();
 
   try {
-    // Send the pitch email (real or mock)
     await sendMailHelper(lead.email, `Outreach: Customer bookings audit for ${lead.name}`, lead.pitch, profile);
 
-    campaigns[cIndex].leads[leadIndex].status = "sent";
-    writeJsonFile(CAMPAIGNS_PATH, campaigns);
+    lead.status = "sent";
+    await campaign.save();
 
-    // Trigger simulated inbound email response in 5 seconds
-    simulateInboundReply(campaigns[cIndex], campaigns[cIndex].leads[leadIndex]);
+    simulateInboundReply(campaign, lead);
 
-    res.json({ success: true, lead: campaigns[cIndex].leads[leadIndex] });
+    res.json({ success: true, lead });
   } catch (err) {
     res.status(500).json({ error: `Failed to dispatch SMTP email: ${err.message}` });
   }
 });
 
-// Inbox Endpoints
-app.get('/api/inbox', (req, res) => {
-  const inbox = readJsonFile(INBOX_PATH, []);
+app.get('/api/inbox', async (req, res) => {
+  const inbox = await Inbox.find({}).sort({ timestamp: -1 });
   res.json(inbox);
 });
 
 app.post('/api/inbox/:id/reply', async (req, res) => {
   const { id } = req.params;
-  const inbox = readJsonFile(INBOX_PATH, []);
-  const messageIndex = inbox.findIndex(m => m.id === id);
+  
+  const message = await Inbox.findOne({ id });
+  if (!message) return res.status(404).json({ error: "Message not found" });
 
-  if (messageIndex === -1) {
-    return res.status(404).json({ error: "Message not found" });
-  }
+  const profile = await getProfile();
+  
+  // Hardcode tactics to replace objections.json file dependency to simplify deployment
+  const tacticsObj = {
+    price: ["Offer a free trial", "Explain ROI vs cost", "Highlight long-term value"],
+    trust: ["Offer a free live test call", "Mention ElevenLabs realism", "Explain 1-second delay"],
+    website: ["Explain voice is an add-on, not replacement", "Highlight missed calls after hours"]
+  };
 
-  const message = inbox[messageIndex];
-  const profile = getProfile();
-  const objections = readJsonFile(OBJECTIONS_PATH, {});
-
-  // Analyze objection category based on content keywords
   const content = message.content.toLowerCase();
   let category = "general";
   let tactics = [];
 
   if (content.includes("budget") || content.includes("cost") || content.includes("price") || content.includes("afford")) {
     category = "price";
-    tactics = objections.price?.tactics || [];
+    tactics = tacticsObj.price;
   } else if (content.includes("robot") || content.includes("fake") || content.includes("latency") || content.includes("voice")) {
     category = "trust";
-    tactics = objections.trust?.tactics || [];
+    tactics = tacticsObj.trust;
   } else if (content.includes("already have") || content.includes("website") || content.includes("existing")) {
     category = "website";
-    tactics = objections.website?.tactics || [];
+    tactics = tacticsObj.website;
   } else {
     tactics = ["Offer a quick demo call mapping a test number directly to their mobile to show immediate value."];
   }
 
-  // Build agent thought logs
   const logs = [
     { type: "thought", message: `Parsing email reply from ${message.leadName}. Identified objection category: ${category.toUpperCase()}`, timestamp: new Date().toISOString() },
     { type: "action", message: `Querying objections database for "${category}" tactics...`, timestamp: new Date().toISOString() },
@@ -615,7 +560,6 @@ app.post('/api/inbox/:id/reply', async (req, res) => {
     { type: "thought", message: `Generating personalized AI reply to overcome the "${category}" objection for ${message.leadName}.`, timestamp: new Date().toISOString() }
   ];
 
-  // ── AI-Powered Reply Generation ──
   const replySystemPrompt = `You are Kuldeep Kataria, founder of ${profile.name}, a web and AI agency in Fargo, ND.
 You are replying to a local business owner who responded to your cold pitch email. 
 Your goal is to overcome their objection and get them to agree to a 10-minute call or demo.
@@ -631,84 +575,72 @@ Use these proven tactics to overcome it:
 ${tactics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
 Write a personalized reply to overcome their "${category}" objection and schedule a meeting. 
-Suggest Tuesday at 2:00 PM or Thursday at 10:00 AM CST. Keep it under 150 words and natural.`;
+Ask them to let you know when they are free so you can call them immediately. Keep it under 150 words and natural.`;
 
   let replyText = "";
-  const aiReply = await generateTextHelper(replyUserPrompt, replySystemPrompt);
+  const aiReply = await generateTextHelper(replyUserPrompt, replySystemPrompt, profile);
 
   if (aiReply) {
     replyText = aiReply;
     logs.push({ type: "observation", message: `AI Brain generated a personalized ${category} objection reply.`, timestamp: new Date().toISOString() });
   } else {
-    // Template fallback
     if (category === "price") {
-      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nI completely understand that budget is top of mind right now. That's actually why we structure things differently at ${profile.name}.\n\nWe build a **free, live working demo** of your website or voice agent first, so you can test it and see the actual results before you pay us anything. If you don't see how it will bring you more bookings, we walk away and you owe nothing.\n\nI have slots open this **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST**. Just let me know if one of those works!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nI completely understand that budget is top of mind right now. That's actually why we structure things differently at ${profile.name}.\n\nWe build a **free, live working demo** of your website or voice agent first, so you can test it and see the actual results before you pay us anything. If you don't see how it will bring you more bookings, we walk away and you owe nothing.\n\nPlease let me know when you are free, and we will call you immediately to chat about it!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
     } else if (category === "trust") {
-      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThat's a very fair concern. A lot of AI voice bots sound robotic and turn customers off. That's why we use ElevenLabs' neural engine—it captures natural human tone, breathing, and has less than a 1-second delay, so customers feel like they are talking to a real receptionist.\n\nI would love to set up a quick **test number** mapped to your phone so you can dial in and speak to the AI agent yourself to test the realism.\n\nDoes **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST** work for you?\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThat's a very fair concern. A lot of AI voice bots sound robotic and turn customers off. That's why we use ElevenLabs' neural engine—it captures natural human tone, breathing, and has less than a 1-second delay, so customers feel like they are talking to a real receptionist.\n\nI would love to set up a quick **test number** mapped to your phone so you can dial in and speak to the AI agent yourself to test the realism.\n\nPlease let me know when you are free, and we will call you immediately to get that set up for you.\n\nBest,\nKuldeep Kataria\n${profile.name}`;
     } else {
-      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThanks for getting back to me! The AI Voice Agent is actually built to connect as an **add-on** to your existing phone line rather than replacing your website, answering calls after-hours so you never miss another booking.\n\nI have times open this **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST**. Let me know which one works!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThanks for getting back to me! The AI Voice Agent is actually built to connect as an **add-on** to your existing phone line rather than replacing your website, answering calls after-hours so you never miss another booking.\n\nPlease let me know when you are free, and we will call you immediately to answer any questions!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
     }
     logs.push({ type: "observation", message: `Template fallback used (no LLM keys configured).`, timestamp: new Date().toISOString() });
   }
 
-  inbox[messageIndex].status = "replied";
-  inbox[messageIndex].reply = replyText;
-  inbox[messageIndex].objectionCategory = category;
-  inbox[messageIndex].tacticsUsed = tactics;
-  inbox[messageIndex].aiGenerated = !!aiReply;
-  writeJsonFile(INBOX_PATH, inbox);
+  message.status = "replied";
+  message.reply = replyText;
+  message.objectionCategory = category;
+  message.tacticsUsed = tactics;
+  message.aiGenerated = !!aiReply;
+  await message.save();
 
   res.json({ logs, reply: replyText, category, tactics, aiGenerated: !!aiReply });
 });
 
-// Mark meeting booked
 app.post('/api/inbox/:id/book', async (req, res) => {
   const { id } = req.params;
-  const inbox = readJsonFile(INBOX_PATH, []);
-  const messageIndex = inbox.findIndex(m => m.id === id);
+  
+  const message = await Inbox.findOne({ id });
+  if (!message) return res.status(404).json({ error: "Message not found" });
 
-  if (messageIndex === -1) {
-    return res.status(404).json({ error: "Message not found" });
-  }
-
-  const message = inbox[messageIndex];
-  const profile = getProfile();
+  const profile = await getProfile();
 
   try {
-    // Send the booking calendar reply email (real or mock)
     await sendMailHelper(message.leadEmail, `Re: Booking details with PixelPrairie`, message.reply, profile);
 
-    inbox[messageIndex].status = "meeting_booked";
-    writeJsonFile(INBOX_PATH, inbox);
+    message.status = "meeting_booked";
+    await message.save();
 
     // Link back to campaign and update lead status
-    const campaigns = readJsonFile(CAMPAIGNS_PATH, []);
+    const campaigns = await Campaign.find({});
     let updated = false;
 
-    for (let i = 0; i < campaigns.length; i++) {
-      const lIdx = campaigns[i].leads.findIndex(l => l.email === message.leadEmail);
-      if (lIdx !== -1) {
-        campaigns[i].leads[lIdx].meetingBooked = true;
+    for (let c of campaigns) {
+      const lead = c.leads.find(l => l.email === message.leadEmail);
+      if (lead) {
+        lead.meetingBooked = true;
+        await c.save();
         updated = true;
         break;
       }
     }
 
-    if (updated) {
-      writeJsonFile(CAMPAIGNS_PATH, campaigns);
-    }
-
-    res.json({ success: true, message: inbox[messageIndex] });
+    res.json({ success: true, message });
   } catch (err) {
     res.status(500).json({ error: `Failed to send booking SMTP email: ${err.message}` });
   }
 });
 
-// Simulation of Inbound Reply after email is mock sent
-function simulateInboundReply(campaign, lead) {
-  setTimeout(() => {
-    const inbox = readJsonFile(INBOX_PATH, []);
-    const exists = inbox.some(m => m.leadEmail === lead.email);
+async function simulateInboundReply(campaign, lead) {
+  setTimeout(async () => {
+    const exists = await Inbox.findOne({ leadEmail: lead.email });
     if (exists) return; // avoid duplicate mock replies
 
     const replies = [
@@ -729,33 +661,25 @@ function simulateInboundReply(campaign, lead) {
       }
     ];
 
-    // Select suitable reply based on niche
     let reply = replies[2];
     if (campaign.niche.toLowerCase().includes('salon')) reply = replies[0];
     else if (campaign.niche.toLowerCase().includes('child')) reply = replies[1];
 
-    const newReply = {
+    await Inbox.create({
       id: Math.random().toString(36).substring(2, 9),
-      campaignId: campaign.id,
-      leadId: lead.id,
       leadName: lead.name,
       leadEmail: lead.email,
       subject: reply.subject,
       content: reply.content,
-      status: "unread", // unread | replied | meeting_booked
-      timestamp: new Date().toISOString(),
+      status: "unread",
       reply: "",
       objectionCategory: "",
       tacticsUsed: []
-    };
-
-    inbox.unshift(newReply);
-    writeJsonFile(INBOX_PATH, inbox);
+    });
     console.log(`Mock reply created in inbox for lead ${lead.name}`);
-  }, 5000); // 5 seconds delay
+  }, 5000);
 }
 
-// Google PageSpeed Insights Auditor Helper
 async function fetchPageSpeedStats(domain, apiKey) {
   let targetUrl = domain;
   if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
@@ -768,16 +692,13 @@ async function fetchPageSpeedStats(domain, apiKey) {
   }
   
   try {
-    console.log(`Querying Google PageSpeed API for ${targetUrl} (API Key: ${apiKey ? 'Yes' : 'No'})...`);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000); // 12 seconds timeout
+    const timeout = setTimeout(() => controller.abort(), 12000);
     
     const response = await fetch(apiUrl, { signal: controller.signal });
     clearTimeout(timeout);
     
-    if (!response.ok) {
-      throw new Error(`Google API returned status ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Google API returned status ${response.status}`);
     
     const data = await response.json();
     const scoreVal = data.lighthouseResult?.categories?.performance?.score;
@@ -785,11 +706,7 @@ async function fetchPageSpeedStats(domain, apiKey) {
     const fcp = data.lighthouseResult?.audits?.['first-contentful-paint']?.displayValue || null;
     
     if (score !== null && fcp !== null) {
-      return {
-        score,
-        fcp,
-        success: true
-      };
+      return { score, fcp, success: true };
     }
   } catch (err) {
     console.error(`PageSpeed audit failed for ${targetUrl}:`, err.message);
@@ -797,35 +714,25 @@ async function fetchPageSpeedStats(domain, apiKey) {
   return { success: false };
 }
 
-// Autopilot Queue Background Processor
 async function processCampaignAutopilot(campaignId) {
   console.log(`Starting autopilot processing for campaign ${campaignId}`);
 
-  let campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-  let cIndex = campaigns.findIndex(c => c.id === campaignId);
-  if (cIndex === -1) return;
+  let campaign = await Campaign.findOne({ id: campaignId });
+  if (!campaign) return;
 
-  const campaign = campaigns[cIndex];
-  const profile = getProfile();
+  const profile = await getProfile();
 
   let leadPool = [];
   try {
     leadPool = await fetchGooglePlacesLeads(campaign.niche, campaign.location, profile.googleMapsApiKey, campaign.size);
   } catch (err) {
-    console.error(`Failed to scrape live leads: ${err.message}`);
-    // If scraper fails, mark campaign as failed so it doesn't hang
-    campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-    cIndex = campaigns.findIndex(c => c.id === campaignId);
-    if (cIndex !== -1) {
-      campaigns[cIndex].status = "failed";
-      campaigns[cIndex].progress = 0;
-      writeJsonFile(CAMPAIGNS_PATH, campaigns);
-    }
+    campaign.status = "failed";
+    await campaign.save();
     return;
   }
 
-  const selectedLeads = leadPool.slice(0, campaign.size).map(l => ({
-    id: Math.random().toString(36).substring(2, 9),
+  const selectedLeads = leadPool.map(l => ({
+    id: l.id,
     name: l.name,
     url: l.url,
     issue: l.issue,
@@ -833,40 +740,30 @@ async function processCampaignAutopilot(campaignId) {
     phone: l.phone,
     status: "discovered",
     pitch: "",
-    meetingBooked: false
+    meetingBooked: false,
+    aiGenerated: false
   }));
 
-  campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-  cIndex = campaigns.findIndex(c => c.id === campaignId);
-  if (cIndex !== -1) {
-    campaigns[cIndex].status = "running";
-    campaigns[cIndex].progress = 10;
-    campaigns[cIndex].leads = selectedLeads;
-    writeJsonFile(CAMPAIGNS_PATH, campaigns);
-  }
+  campaign.status = "running";
+  campaign.progress = 10;
+  campaign.leads = selectedLeads;
+  await campaign.save();
 
   for (let i = 0; i < selectedLeads.length; i++) {
     const lead = selectedLeads[i];
     
-    // Stage A: Auditing Lead via Google PageSpeed
-    campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-    cIndex = campaigns.findIndex(c => c.id === campaignId);
-    if (cIndex !== -1) {
-      campaigns[cIndex].leads[i].status = "auditing";
-      campaigns[cIndex].progress = Math.min(90, Math.floor(10 + (i * (90 / selectedLeads.length))));
-      writeJsonFile(CAMPAIGNS_PATH, campaigns);
-    }
+    campaign = await Campaign.findOne({ id: campaignId });
+    campaign.leads[i].status = "auditing";
+    campaign.progress = Math.min(90, Math.floor(10 + (i * (90 / selectedLeads.length))));
+    await campaign.save();
 
     const auditResult = await fetchPageSpeedStats(lead.url, profile.googleApiKey);
     let issueText = lead.issue;
     
     if (auditResult.success) {
       issueText = `slow mobile load speed (Google Lighthouse Performance Score: ${auditResult.score}/100, page load time: ${auditResult.fcp})`;
-    } else {
-      console.log(`PageSpeed check skipped/failed. Using fallback local audit for ${lead.url}`);
     }
 
-    // Stage B: Generating Pitch Email via AI Brain or Template Fallback
     const pitchSystemPrompt = `You are an expert B2B sales copywriter for ${profile.name}, a web and AI agency based in Fargo, ND. 
 Your goal is to write highly personalized, value-first cold pitch emails to local businesses. 
 Write in a friendly, professional, and conversational tone. Use specific details about the business's identified problem.
@@ -890,13 +787,11 @@ The email should:
 5. Be under 200 words and feel human-written, not generic`;
 
     let customPitch;
-    const aiPitch = await generateTextHelper(pitchUserPrompt, pitchSystemPrompt);
+    const aiPitch = await generateTextHelper(pitchUserPrompt, pitchSystemPrompt, profile);
 
     if (aiPitch) {
-      // AI-generated pitch — wrap it in the standard markdown card format
       customPitch = `### 🎯 PixelPrairie Lead Audit & Pitch Proposal\n\n**Target Business:** ${lead.name}\n**Location:** ${campaign.location}\n**Identified Conversion Block:** ${issueText}\n\n---\n\n#### 📧 AI-Generated Personalized Pitch Email\n\n${aiPitch}`;
     } else {
-      // Template fallback if no LLM keys configured
       const { result } = runAgent('outreach', `${campaign.location} - ${campaign.niche}`, profile);
       customPitch = result
         .replace(/Target Business: .*/g, `Target Business: ${lead.name}`)
@@ -907,29 +802,22 @@ The email should:
         .replace(/costs you customers: \*\*.*\*\*/g, `costs you customers: **${issueText}**`);
     }
 
-    campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-    cIndex = campaigns.findIndex(c => c.id === campaignId);
-    if (cIndex !== -1) {
-      campaigns[cIndex].leads[i].issue = issueText; // Save the real PageSpeed metrics!
-      campaigns[cIndex].leads[i].status = "drafted";
-      campaigns[cIndex].leads[i].pitch = customPitch;
-      campaigns[cIndex].leads[i].aiGenerated = !!aiPitch; // flag: true = AI, false = template
-      campaigns[cIndex].progress = Math.min(90, Math.floor(10 + ((i + 0.8) * (90 / selectedLeads.length))));
-      writeJsonFile(CAMPAIGNS_PATH, campaigns);
-    }
+    campaign = await Campaign.findOne({ id: campaignId });
+    campaign.leads[i].issue = issueText;
+    campaign.leads[i].status = "drafted";
+    campaign.leads[i].pitch = customPitch;
+    campaign.leads[i].aiGenerated = !!aiPitch;
+    campaign.progress = Math.min(90, Math.floor(10 + ((i + 0.8) * (90 / selectedLeads.length))));
+    await campaign.save();
   }
 
   await new Promise(resolve => setTimeout(resolve, 1000));
-  campaigns = readJsonFile(CAMPAIGNS_PATH, []);
-  cIndex = campaigns.findIndex(c => c.id === campaignId);
-  if (cIndex !== -1) {
-    campaigns[cIndex].status = "completed";
-    campaigns[cIndex].progress = 100;
-    writeJsonFile(CAMPAIGNS_PATH, campaigns);
-  }
+  campaign = await Campaign.findOne({ id: campaignId });
+  campaign.status = "completed";
+  campaign.progress = 100;
+  await campaign.save();
 }
 
-// Fallback route to serve built index.html
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
