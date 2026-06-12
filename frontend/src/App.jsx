@@ -452,9 +452,13 @@ export default function App() {
   const fetchProfile = async () => {
     try {
       const res = await fetch('/api/profile');
-      const data = await res.json();
-      setProfile(data);
-      setProfileForm(data);
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.error) {
+          setProfile(data);
+          setProfileForm(data);
+        }
+      }
     } catch (e) {
       console.error("Error fetching profile", e);
     }
@@ -1223,7 +1227,7 @@ export default function App() {
             {activeTab === 'voice-sandbox' && 'AI Voice Call Sandbox'}
           </h2>
           <div className="header-meta">
-            <div className="meta-badge">{profile.techStack.split(',')[0] || 'Next.js 16'}</div>
+            <div className="meta-badge">{(profile && profile.techStack) ? profile.techStack.split(',')[0] : 'Next.js 16'}</div>
           </div>
         </header>
 
