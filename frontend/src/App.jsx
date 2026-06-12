@@ -638,6 +638,7 @@ export default function App() {
         speakLocalBrowserText(text, onEnd);
       };
 
+      if (!document.querySelector('.btn-hangup')) return; // Abort if call was disconnected during the fetch
       audio.play();
     } catch (err) {
       console.error("ElevenLabs TTS failed, falling back to local browser voice:", err);
@@ -778,7 +779,7 @@ export default function App() {
     } 
     // Fallback response
     else {
-      reply = `At ${profile.name || 'PixelPrairie'}, we build custom Next.js websites and low-latency ElevenLabs conversational voice agents. We build a free, live working demo of your new setup before you pay us anything. Would you like me to send an iPhone calendar invitation for a 10-minute chat this Tuesday at 2:00 PM?`;
+      reply = `At ${profile.name || 'PixelPrairie'}, we build custom Next.js websites and low-latency ElevenLabs conversational voice agents. We build a free, live working demo of your new setup before you pay us anything. Please let me know when you are free, and we can jump on a quick call to discuss it!`;
     }
 
     setSimTranscript(prev => [...prev, { sender: 'agent', text: reply }]);
