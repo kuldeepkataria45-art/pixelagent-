@@ -29,7 +29,10 @@ const frontendDistPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDistPath));
 
 // Connect to MongoDB
-const MONGO_URI = "mongodb+srv://admin:pixel123@cluster0.xghzz0y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error("CRITICAL ERROR: MONGO_URI is missing from environment variables");
+}
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log('Successfully connected to MongoDB Atlas!'))
