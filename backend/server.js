@@ -75,42 +75,87 @@ const getProfile = () => {
     smtpUser: process.env.SMTP_USER || fileProfile.smtpUser || "",
     smtpPass: process.env.SMTP_PASS || fileProfile.smtpPass || "",
     smtpSender: process.env.SMTP_SENDER || fileProfile.smtpSender || "",
-    googleApiKey: process.env.GOOGLE_API_KEY || fileProfile.googleApiKey || ""
+    googleApiKey: process.env.GOOGLE_API_KEY || fileProfile.googleApiKey || "",
+    geminiApiKey: process.env.GEMINI_API_KEY || fileProfile.geminiApiKey || "",
+    openaiApiKey: process.env.OPENAI_API_KEY || fileProfile.openaiApiKey || "",
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || fileProfile.googleMapsApiKey || ""
   };
 };
+
 
 // Initialize databases if not exists
 if (!fs.existsSync(HISTORY_PATH)) writeJsonFile(HISTORY_PATH, []);
 if (!fs.existsSync(CAMPAIGNS_PATH)) writeJsonFile(CAMPAIGNS_PATH, []);
 if (!fs.existsSync(INBOX_PATH)) writeJsonFile(INBOX_PATH, []);
 
-// Local Fargo-Moorhead Business Leads Database
-const localBusinessDB = {
-  salon: [
-    { name: "Velourra Salon", url: "velourrasalon.com", issue: "no online booking widget, slow mobile website (5.2s load speed)", email: "contact@velourrasalon.com", phone: "(701) 555-4029" },
-    { name: "Hair Atelier", url: "hairatelierfargo.com", issue: "missing conversational AI phone receptionist (calls go to voicemail)", email: "info@hairatelierfargo.com", phone: "(701) 555-9831" },
-    { name: "Red River Barber Co", url: "redriverbarber.com", issue: "outdated site from 2016, lacks parent/customer text alerts", email: "bookings@redriverbarber.com", phone: "(701) 555-1234" },
-    { name: "Apex Hair Studio", url: "apexhairfargo.com", issue: "no mobile booking app, poor local SEO keyword mapping", email: "hello@apexhairfargo.com", phone: "(701) 555-8765" }
-  ],
-  childcare: [
-    { name: "Creative Nest Childcare", url: "creativenestchildcare.com", issue: "broken contact form, slow mobile rendering (6.1s)", email: "director@creativenest.com", phone: "(701) 555-2244" },
-    { name: "Fargo Daycare Pros", url: "fargodaycarepros.com", issue: "no automated SMS check-ins or parent voice bot", email: "fargodaycare@gmail.com", phone: "(701) 555-7799" },
-    { name: "Moorhead Early Academy", url: "moorheadearlyacademy.org", issue: "missing Google map integration, legacy layout", email: "academy@moorheadearly.org", phone: "(218) 555-3300" }
-  ],
-  landscaping: [
-    { name: "Red River Lawn & Snow", url: "redriverlawnfargo.com", issue: "no instant quoting form, site not mobile responsive", email: "office@redriverlawnfargo.com", phone: "(701) 555-1155" },
-    { name: "Moorhead Greenery", url: "moorheadgreenery.com", issue: "missing phone receptionist (voicemail triggers constantly)", email: "info@moorheadgreenery.com", phone: "(218) 555-6677" },
-    { name: "Fargo Turf Care", url: "fargoturf.com", issue: "legacy site built on old Drupal version, page load speed 4.9s", email: "service@fargoturf.com", phone: "(701) 555-9090" }
-  ]
-};
-
 const getFallbackLeads = (niche, location) => {
+  const safeNiche = niche.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const safeLocation = location.toLowerCase().replace(/[^a-z]/g, '').slice(0, 12);
   return [
-    { name: `Apex ${niche} Services`, url: `apex${niche.toLowerCase().replace(/\s+/g, '')}.com`, issue: "outdated web page, missing automated client booking features", email: `info@apex${niche.toLowerCase().replace(/\s+/g, '')}.com`, phone: "(701) 555-0987" },
-    { name: `Red River ${niche} Pro`, url: `redriver${niche.toLowerCase().replace(/\s+/g, '')}.com`, issue: "missing conversational AI receptionist (no after-hours scheduling)", email: `sales@redriver${niche.toLowerCase().replace(/\s+/g, '')}.com`, phone: "(701) 555-6543" },
-    { name: `${location} ${niche} Co`, url: `${location.toLowerCase().replace(/[^a-z]/g, '')}${niche.toLowerCase().replace(/\s+/g, '')}.com`, issue: "slow mobile website load times, lacks local schema optimization", email: `contact@${location.toLowerCase().replace(/[^a-z]/g, '')}${niche.toLowerCase().replace(/\s+/g, '')}.com`, phone: "(701) 555-3344" }
+    { name: `Apex ${niche} Services`, url: `apex-${safeNiche}-demo.example.com`, issue: "outdated web page, missing automated client booking features", email: `info@apex-${safeNiche}.example.com`, phone: "(701) 555-0987" },
+    { name: `Red River ${niche} Pro`, url: `red-river-${safeNiche}-demo.example.com`, issue: "missing conversational AI receptionist (no after-hours scheduling)", email: `sales@red-river-${safeNiche}.example.com`, phone: "(701) 555-6543" },
+    { name: `${location} ${niche} Co`, url: `${safeLocation}-${safeNiche}-demo.example.com`, issue: "slow mobile website load times, lacks local schema optimization", email: `contact@${safeLocation}-${safeNiche}.example.com`, phone: "(701) 555-3344" }
   ];
 };
+
+// ──────────────────────────────────────────────────────────
+// LIVE GOOGLE MAPS API SCRAPER
+// ──────────────────────────────────────────────────────────
+async function fetchGooglePlacesLeads(niche, location, apiKey, limit = 3) {
+  if (!apiKey) {
+    console.log("No Google Maps API Key found. Falling back to safe demo leads.");
+    return getFallbackLeads(niche, location);
+  }
+
+  const query = encodeURIComponent(`${niche} in ${location}`);
+  const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`;
+
+  console.log(`[Google Maps Scraper] Searching for: ${niche} in ${location}`);
+  const searchRes = await fetch(searchUrl);
+  const searchData = await searchRes.json();
+
+  if (searchData.status !== "OK") {
+    throw new Error(`Google Places Search API Error: ${searchData.status} - ${searchData.error_message || ''}`);
+  }
+
+  const leads = [];
+  const results = searchData.results.slice(0, limit + 2); // get a few extra in case some lack websites
+
+  for (const place of results) {
+    if (leads.length >= limit) break;
+
+    // Fetch details to get website and phone number
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,website,formatted_phone_number&key=${apiKey}`;
+    const detailsRes = await fetch(detailsUrl);
+    const detailsData = await detailsRes.json();
+
+    if (detailsData.status === "OK" && detailsData.result) {
+      const details = detailsData.result;
+      
+      // We strongly prefer leads with websites so we can run PageSpeed audits
+      const website = details.website || `${place.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+      const domain = website.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const phone = details.formatted_phone_number || "No phone listed";
+      const email = `info@${domain}`;
+
+      leads.push({
+        name: details.name || place.name,
+        url: domain,
+        issue: "missing automated conversational AI receptionist and poor local SEO optimization",
+        email: email,
+        phone: phone
+      });
+    }
+  }
+
+  // Fallback if the scraper fails to find any leads (very rare)
+  if (leads.length === 0) {
+    throw new Error(`No local businesses found for ${niche} in ${location}. Try a different location.`);
+  }
+
+  return leads;
+}
+
 
 // SMTP Nodemailer Sender Helper
 async function sendMailHelper(to, subject, body, profile) {
@@ -150,7 +195,91 @@ async function sendMailHelper(to, subject, body, profile) {
   }
 }
 
+// ──────────────────────────────────────────────────────────
+//  AI BRAIN — LLM Text Generator (Gemini → OpenAI → Fallback)
+// ──────────────────────────────────────────────────────────
+async function generateTextHelper(prompt, systemInstruction = "") {
+  const profile = getProfile();
+
+  // ── 1. Attempt Google Gemini 2.5 Flash ──
+  if (profile.geminiApiKey) {
+    try {
+      console.log("[AI Brain] Using Gemini 2.5 Flash...");
+      const body = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        systemInstruction: systemInstruction
+          ? { parts: [{ text: systemInstruction }] }
+          : undefined,
+        generationConfig: { temperature: 0.85, maxOutputTokens: 1024 }
+      };
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${profile.geminiApiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        }
+      );
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini API error ${response.status}: ${errText}`);
+      }
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) {
+        console.log("[AI Brain] Gemini response received successfully.");
+        return text.trim();
+      }
+      throw new Error("Gemini returned empty response.");
+    } catch (err) {
+      console.warn("[AI Brain] Gemini failed, checking OpenAI fallback:", err.message);
+    }
+  }
+
+  // ── 2. Attempt OpenAI GPT-4o-mini ──
+  if (profile.openaiApiKey) {
+    try {
+      console.log("[AI Brain] Using OpenAI GPT-4o-mini...");
+      const messages = [];
+      if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
+      messages.push({ role: "user", content: prompt });
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${profile.openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages,
+          temperature: 0.85,
+          max_tokens: 1024
+        })
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenAI API error ${response.status}: ${errText}`);
+      }
+      const data = await response.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if (text) {
+        console.log("[AI Brain] OpenAI response received successfully.");
+        return text.trim();
+      }
+      throw new Error("OpenAI returned empty response.");
+    } catch (err) {
+      console.warn("[AI Brain] OpenAI failed, falling back to template mode:", err.message);
+    }
+  }
+
+  // ── 3. No API keys or both failed — return null for template fallback ──
+  console.log("[AI Brain] No active LLM keys configured. Using template fallback.");
+  return null;
+}
+
 // Routes
+
 app.get('/api/profile', (req, res) => {
   res.json(getProfile());
 });
@@ -447,7 +576,7 @@ app.get('/api/inbox', (req, res) => {
   res.json(inbox);
 });
 
-app.post('/api/inbox/:id/reply', (req, res) => {
+app.post('/api/inbox/:id/reply', async (req, res) => {
   const { id } = req.params;
   const inbox = readJsonFile(INBOX_PATH, []);
   const messageIndex = inbox.findIndex(m => m.id === id);
@@ -478,30 +607,58 @@ app.post('/api/inbox/:id/reply', (req, res) => {
     tactics = ["Offer a quick demo call mapping a test number directly to their mobile to show immediate value."];
   }
 
-  // Generate the smart objection response using iPhone-specific calendar options
+  // Build agent thought logs
   const logs = [
     { type: "thought", message: `Parsing email reply from ${message.leadName}. Identified objection category: ${category.toUpperCase()}`, timestamp: new Date().toISOString() },
-    { type: "action", message: `Querying objections.json database for "${category}" tactics...`, timestamp: new Date().toISOString() },
-    { type: "observation", message: `Retrieved tactics: ${JSON.stringify(tactics)}`, timestamp: new Date().toISOString() },
-    { type: "thought", message: `Drafting iPhone Calendar Invite invitation reply. Customizing proposal to bypass ${category} obstacle.`, timestamp: new Date().toISOString() }
+    { type: "action", message: `Querying objections database for "${category}" tactics...`, timestamp: new Date().toISOString() },
+    { type: "observation", message: `Retrieved ${tactics.length} proven conversion tactics for this objection.`, timestamp: new Date().toISOString() },
+    { type: "thought", message: `Generating personalized AI reply to overcome the "${category}" objection for ${message.leadName}.`, timestamp: new Date().toISOString() }
   ];
 
+  // ── AI-Powered Reply Generation ──
+  const replySystemPrompt = `You are Kuldeep Kataria, founder of ${profile.name}, a web and AI agency in Fargo, ND.
+You are replying to a local business owner who responded to your cold pitch email. 
+Your goal is to overcome their objection and get them to agree to a 10-minute call or demo.
+Write a warm, confident, human reply. Do not use bullet points or headers — write as natural paragraphs.
+End with: Best,\nKuldeep Kataria\n${profile.name}`;
+
+  const replyUserPrompt = `A lead named "${message.leadName}" responded to your pitch email with the following message:
+
+"${message.content}"
+
+Their main objection type is: ${category.toUpperCase()}
+Use these proven tactics to overcome it:
+${tactics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Write a personalized reply to overcome their "${category}" objection and schedule a meeting. 
+Suggest Tuesday at 2:00 PM or Thursday at 10:00 AM CST. Keep it under 150 words and natural.`;
+
   let replyText = "";
-  if (category === "price") {
-    replyText = `Hi ${message.leadName.split(' ')[0]},\n\nI completely understand that budget is top of mind right now. That's actually why we structure things differently at PixelPrairie.\n\nWe build a **free, live working demo** of your website or voice agent first, so you can test it and see the actual results before you pay us anything. If you don't see how it will bring you more bookings, we walk away and you owe nothing.\n\nSince I manage my calendar on my iPhone, I can send a calendar invite directly to your email so it pops up in your schedule. I have slots open this **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST**. Just let me know if one of those works, and I will send over the invite!\n\nBest,\nKuldeep Kataria\nPixelPrairie`;
-  } else if (category === "trust") {
-    replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThat's a very fair concern. A lot of AI voice bots sound robotic and turn customers off. That's why we use ElevenLabs' neural engine—it captures natural human tone, breathing, and has less than a 1-second delay, so customers feel like they are talking to a real receptionist.\n\nI would love to set up a quick **test number** mapped to your phone so you can dial in and speak to the AI agent yourself to test the realism. \n\nI can send a direct invitation from my iPhone calendar to your inbox for a quick 10-minute check. Does **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST** work for you? Just let me know your email and I'll send it over.\n\nBest,\nKuldeep Kataria\nPixelPrairie`;
+  const aiReply = await generateTextHelper(replyUserPrompt, replySystemPrompt);
+
+  if (aiReply) {
+    replyText = aiReply;
+    logs.push({ type: "observation", message: `AI Brain generated a personalized ${category} objection reply.`, timestamp: new Date().toISOString() });
   } else {
-    replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThanks for getting back to me! I completely understand you already have a site. The AI Voice Agent is actually built to connect as an **add-on** to your existing phone line rather than replacing your website, answering calls after-hours so you never miss another booking.\n\nI can send a calendar invitation directly to your inbox so we can do a quick 10-minute walkthrough. I have times open this **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST**. Let me know which one works and I'll send it straight to your calendar!\n\nBest,\nKuldeep Kataria\nPixelPrairie`;
+    // Template fallback
+    if (category === "price") {
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nI completely understand that budget is top of mind right now. That's actually why we structure things differently at ${profile.name}.\n\nWe build a **free, live working demo** of your website or voice agent first, so you can test it and see the actual results before you pay us anything. If you don't see how it will bring you more bookings, we walk away and you owe nothing.\n\nI have slots open this **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST**. Just let me know if one of those works!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+    } else if (category === "trust") {
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThat's a very fair concern. A lot of AI voice bots sound robotic and turn customers off. That's why we use ElevenLabs' neural engine—it captures natural human tone, breathing, and has less than a 1-second delay, so customers feel like they are talking to a real receptionist.\n\nI would love to set up a quick **test number** mapped to your phone so you can dial in and speak to the AI agent yourself to test the realism.\n\nDoes **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST** work for you?\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+    } else {
+      replyText = `Hi ${message.leadName.split(' ')[0]},\n\nThanks for getting back to me! The AI Voice Agent is actually built to connect as an **add-on** to your existing phone line rather than replacing your website, answering calls after-hours so you never miss another booking.\n\nI have times open this **Tuesday at 2:00 PM** or **Thursday at 10:00 AM CST**. Let me know which one works!\n\nBest,\nKuldeep Kataria\n${profile.name}`;
+    }
+    logs.push({ type: "observation", message: `Template fallback used (no LLM keys configured).`, timestamp: new Date().toISOString() });
   }
 
   inbox[messageIndex].status = "replied";
   inbox[messageIndex].reply = replyText;
   inbox[messageIndex].objectionCategory = category;
   inbox[messageIndex].tacticsUsed = tactics;
+  inbox[messageIndex].aiGenerated = !!aiReply;
   writeJsonFile(INBOX_PATH, inbox);
 
-  res.json({ logs, reply: replyText, category, tactics });
+  res.json({ logs, reply: replyText, category, tactics, aiGenerated: !!aiReply });
 });
 
 // Mark meeting booked
@@ -651,16 +808,20 @@ async function processCampaignAutopilot(campaignId) {
   const campaign = campaigns[cIndex];
   const profile = getProfile();
 
-  const normalizedNiche = campaign.niche.toLowerCase();
   let leadPool = [];
-  if (normalizedNiche.includes('salon') || normalizedNiche.includes('hair') || normalizedNiche.includes('barber')) {
-    leadPool = localBusinessDB.salon;
-  } else if (normalizedNiche.includes('child') || normalizedNiche.includes('daycare') || normalizedNiche.includes('nursery')) {
-    leadPool = localBusinessDB.childcare;
-  } else if (normalizedNiche.includes('landscap') || normalizedNiche.includes('lawn') || normalizedNiche.includes('garden')) {
-    leadPool = localBusinessDB.landscaping;
-  } else {
-    leadPool = getFallbackLeads(campaign.niche, campaign.location);
+  try {
+    leadPool = await fetchGooglePlacesLeads(campaign.niche, campaign.location, profile.googleMapsApiKey, campaign.size);
+  } catch (err) {
+    console.error(`Failed to scrape live leads: ${err.message}`);
+    // If scraper fails, mark campaign as failed so it doesn't hang
+    campaigns = readJsonFile(CAMPAIGNS_PATH, []);
+    cIndex = campaigns.findIndex(c => c.id === campaignId);
+    if (cIndex !== -1) {
+      campaigns[cIndex].status = "failed";
+      campaigns[cIndex].progress = 0;
+      writeJsonFile(CAMPAIGNS_PATH, campaigns);
+    }
+    return;
   }
 
   const selectedLeads = leadPool.slice(0, campaign.size).map(l => ({
@@ -705,16 +866,46 @@ async function processCampaignAutopilot(campaignId) {
       console.log(`PageSpeed check skipped/failed. Using fallback local audit for ${lead.url}`);
     }
 
-    // Stage B: Generating Pitch Email
-    const { result } = runAgent('outreach', `${campaign.location} - ${campaign.niche}`, profile);
+    // Stage B: Generating Pitch Email via AI Brain or Template Fallback
+    const pitchSystemPrompt = `You are an expert B2B sales copywriter for ${profile.name}, a web and AI agency based in Fargo, ND. 
+Your goal is to write highly personalized, value-first cold pitch emails to local businesses. 
+Write in a friendly, professional, and conversational tone. Use specific details about the business's identified problem.
+Format the output as a ready-to-send email starting with "Subject:" on the first line, followed by a blank line, then the email body.
+Sign off with: Kuldeep Kataria, Founder, ${profile.name}.`;
 
-    const customPitch = result
-      .replace(/Target Business: .*/g, `Target Business: ${lead.name}`)
-      .replace(/Location: .*/g, `Location: ${campaign.location}`)
-      .replace(/Identified Conversion Block: .*/g, `Identified Conversion Block: ${issueText}`)
-      .replace(/Hi Team at .*,/g, `Hi Team at ${lead.name},`)
-      .replace(/re: mobile customer booking/g, `re: customer booking improvements`)
-      .replace(/costs you customers: \*\*.*\*\*/g, `costs you customers: **${issueText}**`);
+    const pitchUserPrompt = `Write a cold pitch email for the following local business:
+- Business Name: ${lead.name}
+- Location: ${campaign.location}
+- Industry/Niche: ${campaign.niche}
+- Website: ${lead.url}
+- Identified Problem: ${issueText}
+- Our Tech Stack: ${profile.techStack}
+- Our Pricing Approach: ${profile.pricingFormula}
+
+The email should:
+1. Reference their specific problem naturally
+2. Explain how we solve it using our tech stack
+3. Offer a free live working demo before any payment
+4. Suggest a quick 10-minute coffee chat or call in ${campaign.location}
+5. Be under 200 words and feel human-written, not generic`;
+
+    let customPitch;
+    const aiPitch = await generateTextHelper(pitchUserPrompt, pitchSystemPrompt);
+
+    if (aiPitch) {
+      // AI-generated pitch — wrap it in the standard markdown card format
+      customPitch = `### 🎯 PixelPrairie Lead Audit & Pitch Proposal\n\n**Target Business:** ${lead.name}\n**Location:** ${campaign.location}\n**Identified Conversion Block:** ${issueText}\n\n---\n\n#### 📧 AI-Generated Personalized Pitch Email\n\n${aiPitch}`;
+    } else {
+      // Template fallback if no LLM keys configured
+      const { result } = runAgent('outreach', `${campaign.location} - ${campaign.niche}`, profile);
+      customPitch = result
+        .replace(/Target Business: .*/g, `Target Business: ${lead.name}`)
+        .replace(/Location: .*/g, `Location: ${campaign.location}`)
+        .replace(/Identified Conversion Block: .*/g, `Identified Conversion Block: ${issueText}`)
+        .replace(/Hi Team at .*,/g, `Hi Team at ${lead.name},`)
+        .replace(/re: mobile customer booking/g, `re: customer booking improvements`)
+        .replace(/costs you customers: \*\*.*\*\*/g, `costs you customers: **${issueText}**`);
+    }
 
     campaigns = readJsonFile(CAMPAIGNS_PATH, []);
     cIndex = campaigns.findIndex(c => c.id === campaignId);
@@ -722,6 +913,7 @@ async function processCampaignAutopilot(campaignId) {
       campaigns[cIndex].leads[i].issue = issueText; // Save the real PageSpeed metrics!
       campaigns[cIndex].leads[i].status = "drafted";
       campaigns[cIndex].leads[i].pitch = customPitch;
+      campaigns[cIndex].leads[i].aiGenerated = !!aiPitch; // flag: true = AI, false = template
       campaigns[cIndex].progress = Math.min(90, Math.floor(10 + ((i + 0.8) * (90 / selectedLeads.length))));
       writeJsonFile(CAMPAIGNS_PATH, campaigns);
     }

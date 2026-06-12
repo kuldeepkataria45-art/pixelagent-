@@ -288,13 +288,13 @@ function RoiCalculator() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [profile, setProfile] = useState({ name: 'PixelPrairie', techStack: '', pricingFormula: '', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '' });
+  const [profile, setProfile] = useState({ name: 'PixelPrairie', techStack: '', pricingFormula: '', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '', geminiApiKey: '', openaiApiKey: '', googleMapsApiKey: '' });
   const [history, setHistory] = useState([]);
 
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
 
   // Profile Edit State
-  const [profileForm, setProfileForm] = useState({ name: '', techStack: '', pricingFormula: '', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '' });
+  const [profileForm, setProfileForm] = useState({ name: '', techStack: '', pricingFormula: '', smtpHost: '', smtpPort: '587', smtpUser: '', smtpPass: '', smtpSender: '', twilioSid: '', twilioAuthToken: '', twilioNumber: '', elevenlabsApiKey: '', elevenlabsAgentId: '', geminiApiKey: '', openaiApiKey: '', googleMapsApiKey: '' });
   const [saveStatus, setSaveStatus] = useState(null);
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
   const [testSmtpStatus, setTestSmtpStatus] = useState(null);
@@ -1370,15 +1370,60 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label>Google PageSpeed API Key (Optional)</label>
-                  <input 
-                    type="password" 
-                    value={profileForm.googleApiKey || ''} 
-                    onChange={e => setProfileForm({...profileForm, googleApiKey: e.target.value})}
-                    placeholder="Paste your Google API Key to avoid rate limits" 
-                  />
-                  <small className="help-text">Obtain a free API Key from Google's Developer Console to run unlimited PageSpeed audits.</small>
-                </div>
+                   <label>Google PageSpeed API Key (Optional)</label>
+                   <input 
+                     type="password" 
+                     value={profileForm.googleApiKey || ''} 
+                     onChange={e => setProfileForm({...profileForm, googleApiKey: e.target.value})}
+                     placeholder="Paste your Google API Key to avoid rate limits" 
+                   />
+                   <small className="help-text">Obtain a free API Key from Google's Developer Console to run unlimited PageSpeed audits.</small>
+                 </div>
+
+                 <div className="form-group" style={{ marginTop: '14px' }}>
+                   <label>📍 Google Maps API Key (For Live Web Scraping)</label>
+                   <input 
+                     type="password" 
+                     value={profileForm.googleMapsApiKey || ''} 
+                     onChange={e => setProfileForm({...profileForm, googleMapsApiKey: e.target.value})}
+                     placeholder="Paste your Google Maps API Key to scrape real local businesses" 
+                   />
+                   <small className="help-text">Required to scrape real local businesses instead of using demo fallback data. Enable the "Places API (New)" or "Places API" in Google Cloud.</small>
+                 </div>
+
+                 {/* ─── AI Brain API Keys ─── */}
+                 <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-glass)', paddingTop: '24px' }}>
+                   <h4 style={{ color: 'var(--accent-cyan)', marginBottom: '6px' }}>🧠 AI Brain — LLM Engine Keys</h4>
+                   <p className="section-desc" style={{ marginBottom: '16px' }}>Connect a real AI brain to generate hyper-personalized pitch emails and objection replies. If both are empty, the agent runs in simulation mode using built-in templates.</p>
+
+                   <div className="form-group">
+                     <label>Gemini API Key (Recommended — Fast &amp; Free Tier Available)</label>
+                     <input 
+                       type="password" 
+                       id="gemini-api-key-input"
+                       value={profileForm.geminiApiKey || ''} 
+                       onChange={e => setProfileForm({...profileForm, geminiApiKey: e.target.value})}
+                       placeholder="Paste your Google Gemini API Key here" 
+                     />
+                     <small className="help-text">Get a free key at <strong>aistudio.google.com</strong>. Uses Gemini 2.5 Flash — ultra-fast and cost-effective.</small>
+                   </div>
+
+                   <div className="form-group" style={{ marginTop: '14px' }}>
+                     <label>OpenAI API Key (Fallback — GPT-4o-mini)</label>
+                     <input 
+                       type="password" 
+                       id="openai-api-key-input"
+                       value={profileForm.openaiApiKey || ''} 
+                       onChange={e => setProfileForm({...profileForm, openaiApiKey: e.target.value})}
+                       placeholder="Paste your OpenAI API Key here (sk-...)" 
+                     />
+                     <small className="help-text">Used as fallback if Gemini key is empty. Get your key at <strong>platform.openai.com</strong>.</small>
+                   </div>
+
+                   <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(0,255,200,0.07)', border: '1px solid rgba(0,255,200,0.2)', borderRadius: '8px' }}>
+                     <small style={{ color: 'var(--accent-cyan)' }}>⚡ <strong>Priority Order:</strong> If Gemini key is set → uses Gemini 2.5 Flash. If only OpenAI key is set → uses GPT-4o-mini. If neither → runs in simulation mode.</small>
+                   </div>
+                 </div>
 
                 <div className="smtp-section" style={{ marginTop: '24px', borderTop: '1px solid var(--border-glass)', paddingTop: '24px' }}>
                   <h4>Outreach SMTP Mailer Setup (Optional)</h4>
