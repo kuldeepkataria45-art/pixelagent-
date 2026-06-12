@@ -450,6 +450,15 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
+app.delete('/api/history', async (req, res) => {
+  try {
+    await History.deleteMany({});
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/agents/run', async (req, res) => {
   const { agentId, input } = req.body;
   if (!agentId || !input) {
@@ -475,13 +484,21 @@ app.post('/api/agents/run', async (req, res) => {
   }
 });
 
-// Autopilot Campaigns Routes
 app.get('/api/campaigns', async (req, res) => {
   try {
     const campaigns = await Campaign.find({}).sort({ timestamp: -1 });
     res.json(campaigns);
   } catch (err) {
     res.status(500).json([]);
+  }
+});
+
+app.delete('/api/campaigns', async (req, res) => {
+  try {
+    await Campaign.deleteMany({});
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -537,6 +554,15 @@ app.get('/api/inbox', async (req, res) => {
     res.json(inbox);
   } catch (err) {
     res.status(500).json([]);
+  }
+});
+
+app.delete('/api/inbox', async (req, res) => {
+  try {
+    await Inbox.deleteMany({});
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

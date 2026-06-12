@@ -517,6 +517,22 @@ export default function App() {
     }
   };
 
+  const handleClearAllData = async () => {
+    if (!window.confirm("Are you sure you want to delete all campaigns, inbox replies, and history? This cannot be undone.")) return;
+    try {
+      await fetch('/api/campaigns', { method: 'DELETE' });
+      await fetch('/api/inbox', { method: 'DELETE' });
+      await fetch('/api/history', { method: 'DELETE' });
+      fetchCampaigns();
+      fetchInbox();
+      fetchHistory();
+      setSelectedCampaign(null);
+      setSelectedMessage(null);
+    } catch (err) {
+      console.error("Failed to delete data:", err);
+    }
+  };
+
   const resetSilenceTimer = () => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = setTimeout(() => {
@@ -1227,6 +1243,15 @@ export default function App() {
             {activeTab === 'voice-sandbox' && 'AI Voice Call Sandbox'}
           </h2>
           <div className="header-meta">
+            {activeTab === 'dashboard' && (
+              <button 
+                className="btn-secondary btn-sm" 
+                style={{ borderColor: 'var(--accent-pink)', color: 'var(--accent-pink)', marginRight: '1rem' }}
+                onClick={handleClearAllData}
+              >
+                Wipe All Test Data
+              </button>
+            )}
             <div className="meta-badge">{(profile && profile.techStack) ? profile.techStack.split(',')[0] : 'Next.js 16'}</div>
           </div>
         </header>
